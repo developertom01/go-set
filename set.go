@@ -34,11 +34,13 @@ type (
 
 		// Converts set into array
 		ToSlice() []any
+
+		Iterator() Iterator
 	}
 
 	Iterator interface {
 		HasNext() bool
 		Next() any
-		Close() any
+		Close()
 	}
 )

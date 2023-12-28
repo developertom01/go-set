@@ -11,8 +11,8 @@ type (
 		byAccess []any
 	}
 	iteratorImpl struct {
-		nextItem any
-		set      setImpl
+		nextItem *any
+		set      *setImpl
 	}
 )
 
@@ -60,10 +60,8 @@ func (s *setImpl) Has(item any) bool {
 func (s *setImpl) Contains(set *setImpl) bool {
 	//Check if item is in set and the item is exactly what is in the array
 	s.mut.Lock()
-	set.mut.Lock()
 	defer s.mut.Unlock()
-	defer set.mut.Unlock()
-	for _, item := range set.byAccess {
+	for _, item := range set.ToSlice() {
 		if exists := s.hasInternal(item); !exists {
 			return false
 		}
@@ -163,4 +161,45 @@ func (s *setImpl) Complement(set *setImpl) *setImpl {
 		}
 	}
 	return results
+}
+
+func (s *setImpl) Iterator(set *setImpl) *iteratorImpl {
+	itr := newIterator(s)
+	s.mut.Lock()
+	return itr
+}
+
+func newIterator(set *setImpl) *iteratorImpl {
+	return &iteratorImpl{
+		set: set,
+	}
+}
+
+func (itr *iteratorImpl) prepareNext() {
+	if itr.nextItem == nil && !itr.set.IsEmpty() {
+		itr.nextItem = &itr.set.byAccess[0]
+	} else {
+		index := itr.set.byKey[itr.nextItem]
+		if index+1 > itr.set.Len()-1 {
+			itr.nextItem = nil
+		}
+		itr.nextItem = &itr.set.byAccess[index+1]
+	}
+}
+
+func (itr *iteratorImpl) HasNext() bool {
+	return itr.nextItem != nil
+}
+
+func (itr *iteratorImpl) Next() any {
+	if itr.nextItem == nil {
+		panic("Set out of range")
+	}
+	next := itr.nextItem
+	itr.prepareNext()
+	return next
+}
+
+func (itr *iteratorImpl) Close() {
+	itr.set.mut.Unlock()
 }
