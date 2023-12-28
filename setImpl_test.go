@@ -114,3 +114,26 @@ func TestSetComplementOperations(t *testing.T) {
 	assert.False(t, set1.Contains(complementSet))
 
 }
+
+func TestIterator(t *testing.T) {
+	set := NewSet()
+
+	set.Add(1)
+	set.Add(2)
+	set.Add(3)
+
+	itr := set.Iterator()
+	defer itr.Close()
+	nextItem := itr.Next().(*any)
+	assert.Equal(t, 1, *nextItem)
+
+	nextItem = itr.Next().(*any)
+	assert.Equal(t, 2, *nextItem)
+
+	nextItem = itr.Next().(*any)
+	assert.Equal(t, 3, *nextItem)
+
+	assert.Panics(t, func() {
+		itr.Next()
+	})
+}

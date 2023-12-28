@@ -1,6 +1,7 @@
 package set
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -85,6 +86,9 @@ func (s *setImpl) Remove(item any) {
 func (s *setImpl) Len() int {
 	s.mut.Lock()
 	defer s.mut.Unlock()
+	return s.lenInternal()
+}
+func (s *setImpl) lenInternal() int {
 	return len(s.byAccess)
 }
 
@@ -164,9 +168,10 @@ func (s *setImpl) Complement(set *setImpl) *setImpl {
 	return results
 }
 
-func (s *setImpl) Iterator(set *setImpl) *iteratorImpl {
+func (s *setImpl) Iterator() *iteratorImpl {
 	itr := newIterator(s)
 	s.mut.Lock()
+	itr.prepareNext()
 	return itr
 }
 
@@ -180,11 +185,14 @@ func (itr *iteratorImpl) prepareNext() {
 	if itr.nextItem == nil && !itr.set.IsEmpty() {
 		itr.nextItem = &itr.set.byAccess[0]
 	} else {
-		index := itr.set.byKey[itr.nextItem]
-		if index+1 > itr.set.Len()-1 {
+		prevItem := itr.nextItem
+		index := itr.set.byKey[*prevItem]
+		if index+1 >= itr.set.lenInternal() {
 			itr.nextItem = nil
+		} else {
+			fmt.Println(index)
+			itr.nextItem = &itr.set.byAccess[index+1]
 		}
-		itr.nextItem = &itr.set.byAccess[index+1]
 	}
 }
 
