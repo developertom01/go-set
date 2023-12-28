@@ -60,12 +60,12 @@ func (s *setImpl) Has(item any) bool {
 
 // Time complexity is O(len(set2))
 func (s *setImpl) Contains(set *setImpl) bool {
+	s.mut.Lock()
+	defer s.mut.Unlock()
+
 	if set.lenInternal() > s.lenInternal() {
 		return false
 	}
-
-	s.mut.Lock()
-	defer s.mut.Unlock()
 
 	for _, item := range set.toSliceInternal() {
 		if exists := s.hasInternal(item); !exists {
