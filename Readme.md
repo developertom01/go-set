@@ -1,6 +1,7 @@
 # Go implementation for set with support for concurrent access
 
 ## Example
+ - Simple example
 ``` go
 func TestSet(t *testing.T) {
 	set := NewSet()
@@ -34,4 +35,32 @@ func TestSet(t *testing.T) {
 	assert.False(t, set.Has(set2))
 
 }
+```
+
+- Using iterator
+
+``` go
+func TestIterator(t *testing.T) {
+	set := NewSet()
+
+	set.Add(1)
+	set.Add(2)
+	set.Add(3)
+
+	itr := set.Iterator()
+	defer itr.Close()
+	nextItem := itr.Next().(*any)
+	assert.Equal(t, 1, *nextItem)
+
+	nextItem = itr.Next().(*any)
+	assert.Equal(t, 2, *nextItem)
+
+	nextItem = itr.Next().(*any)
+	assert.Equal(t, 3, *nextItem)
+
+	assert.Panics(t, func() {
+		itr.Next()
+	})
+}
+
 ```
