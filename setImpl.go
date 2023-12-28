@@ -42,8 +42,6 @@ func (s *setImpl) Add(item any) {
 
 func (s *setImpl) hasInternal(item any) bool {
 	//Check if item is in set and the item is exactly what is in the array
-	s.mut.Lock()
-	defer s.mut.Unlock()
 	index, ok := s.byKey[item]
 	if !ok {
 		return false
@@ -53,12 +51,16 @@ func (s *setImpl) hasInternal(item any) bool {
 }
 
 func (s *setImpl) Has(item any) bool {
+	s.mut.Lock()
+	defer s.mut.Unlock()
 	return s.hasInternal(item)
 }
 
 // Time complexity is O(len(set2))
 func (s *setImpl) Contains(set *setImpl) bool {
-	//Check if item is in set and the item is exactly what is in the array
+	if set.Len() > s.Len() {
+		return false
+	}
 	s.mut.Lock()
 	defer s.mut.Unlock()
 	for _, item := range set.ToSlice() {
@@ -91,7 +93,7 @@ func (s *setImpl) IsEmpty() bool {
 }
 
 func (s *setImpl) ToSlice() []any {
-	slice := make([]any, 0, s.Len())
+	slice := make([]any, s.Len())
 	s.mut.Lock()
 	defer s.mut.Unlock()
 	copy(slice, s.byAccess)
@@ -108,7 +110,6 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 	var wg sync.WaitGroup
 
 	wg.Add(2)
-
 	go func() {
 		defer wg.Done()
 		for _, item := range s.ToSlice() {
