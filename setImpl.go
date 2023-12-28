@@ -109,11 +109,11 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 	var (
 		//Build new set
 		newSet = NewSet()
+		wg     sync.WaitGroup
 	)
 
-	var wg sync.WaitGroup
-
 	wg.Add(2)
+
 	go func() {
 		defer wg.Done()
 		for _, item := range s.ToSlice() {
@@ -131,7 +131,6 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 	wg.Wait()
 
 	return newSet
-
 }
 
 func (s *setImpl) Intersection(set *setImpl) *setImpl {
