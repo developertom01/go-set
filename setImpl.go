@@ -25,9 +25,6 @@ func NewSet() *setImpl {
 }
 
 func (s *setImpl) addInternal(item any) {
-	//Check if item is in set
-	s.mut.Lock()
-	defer s.mut.Unlock()
 	_, ok := s.byKey[item]
 	if ok {
 		return
@@ -38,6 +35,8 @@ func (s *setImpl) addInternal(item any) {
 }
 
 func (s *setImpl) Add(item any) {
+	s.mut.Lock()
+	defer s.mut.Unlock()
 	s.addInternal(item)
 }
 
@@ -59,12 +58,12 @@ func (s *setImpl) Has(item any) bool {
 
 // Time complexity is O(len(set2))
 func (s *setImpl) Contains(set *setImpl) bool {
-	if set.Len() > s.Len() {
+	if set.lenInternal() > s.lenInternal() {
 		return false
 	}
 	s.mut.Lock()
 	defer s.mut.Unlock()
-	for _, item := range set.ToSlice() {
+	for _, item := range set.toSliceInternal() {
 		if exists := s.hasInternal(item); !exists {
 			return false
 		}
@@ -86,7 +85,8 @@ func (s *setImpl) Remove(item any) {
 func (s *setImpl) Len() int {
 	s.mut.Lock()
 	defer s.mut.Unlock()
-	return s.lenInternal()
+	length := s.lenInternal()
+	return length
 }
 func (s *setImpl) lenInternal() int {
 	return len(s.byAccess)
@@ -96,11 +96,16 @@ func (s *setImpl) IsEmpty() bool {
 	return len(s.byAccess) == 0
 }
 
+func (s *setImpl) toSliceInternal() []any {
+	slice := make([]any, s.lenInternal())
+	copy(slice, s.byAccess)
+	return slice
+}
+
 func (s *setImpl) ToSlice() []any {
-	slice := make([]any, s.Len())
 	s.mut.Lock()
 	defer s.mut.Unlock()
-	copy(slice, s.byAccess)
+	slice := s.toSliceInternal()
 	return slice
 }
 
@@ -116,14 +121,14 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 
 	go func() {
 		defer wg.Done()
-		for _, item := range s.ToSlice() {
+		for _, item := range s.toSliceInternal() {
 			newSet.addInternal(item)
 		}
 	}()
 
 	go func() {
 		defer wg.Done()
-		for _, item := range set.ToSlice() {
+		for _, item := range set.toSliceInternal() {
 			newSet.addInternal(item)
 		}
 	}()
@@ -136,7 +141,7 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 func (s *setImpl) Intersection(set *setImpl) *setImpl {
 	var (
 		results  = NewSet()
-		setItems = set.ToSlice()
+		setItems = set.toSliceInternal()
 	)
 
 	s.mut.Lock()
@@ -153,7 +158,7 @@ func (s *setImpl) Intersection(set *setImpl) *setImpl {
 func (s *setImpl) Complement(set *setImpl) *setImpl {
 	var (
 		results  = NewSet()
-		setItems = set.ToSlice()
+		setItems = set.toSliceInternal()
 	)
 
 	s.mut.Lock()
