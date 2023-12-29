@@ -16,11 +16,16 @@ type (
 	}
 )
 
-func NewSet() *setImpl {
+func newSet() *setImpl {
 	return &setImpl{
 		byKey:    make(map[any]int),
 		byAccess: []any{},
 	}
+}
+
+func NewSet() Set {
+	set := newSet()
+	return set
 }
 
 func (s *setImpl) addInternal(item any) {
@@ -59,15 +64,15 @@ func (s *setImpl) Has(item any) bool {
 }
 
 // Time complexity is O(len(set2))
-func (s *setImpl) Contains(set *setImpl) bool {
+func (s *setImpl) Contains(set Set) bool {
 	s.mut.Lock()
 	defer s.mut.Unlock()
 
-	if set.lenInternal() > s.lenInternal() {
+	if set.Len() > s.lenInternal() {
 		return false
 	}
 
-	for _, item := range set.toSliceInternal() {
+	for _, item := range set.ToSlice() {
 		if exists := s.hasInternal(item); !exists {
 			return false
 		}
@@ -120,11 +125,11 @@ func (s *setImpl) ToSlice() []any {
 	return slice
 }
 
-func (s *setImpl) Union(set *setImpl) *setImpl {
+func (s *setImpl) Union(set Set) Set {
 	//Build new set
 	var (
 		//Build new set
-		newSet = NewSet()
+		newSet = newSet()
 		wg     sync.WaitGroup
 	)
 
@@ -141,7 +146,7 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 	go func() {
 		defer wg.Done()
 
-		for _, item := range set.toSliceInternal() {
+		for _, item := range set.ToSlice() {
 			newSet.addInternal(item)
 		}
 	}()
@@ -151,10 +156,10 @@ func (s *setImpl) Union(set *setImpl) *setImpl {
 	return newSet
 }
 
-func (s *setImpl) Intersection(set *setImpl) *setImpl {
+func (s *setImpl) Intersection(set Set) Set {
 	var (
-		results  = NewSet()
-		setItems = set.toSliceInternal()
+		results  = newSet()
+		setItems = set.ToSlice()
 	)
 
 	s.mut.Lock()
@@ -169,10 +174,10 @@ func (s *setImpl) Intersection(set *setImpl) *setImpl {
 	return results
 }
 
-func (s *setImpl) Complement(set *setImpl) *setImpl {
+func (s *setImpl) Complement(set Set) Set {
 	var (
-		results  = NewSet()
-		setItems = set.toSliceInternal()
+		results  = newSet()
+		setItems = set.ToSlice()
 	)
 
 	s.mut.Lock()
@@ -187,7 +192,7 @@ func (s *setImpl) Complement(set *setImpl) *setImpl {
 	return results
 }
 
-func (s *setImpl) Iterator() *iteratorImpl {
+func (s *setImpl) Iterator() Iterator {
 	itr := newIterator(s)
 	s.mut.Lock()
 	itr.prepareNext()
